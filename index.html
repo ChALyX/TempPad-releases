@@ -6,16 +6,31 @@
   <title>tempPad — 打开就写的临时笔记</title>
   <meta name="description" content="tempPad 是一款极简的桌面临时笔记应用：打开就写，自动保存，需要留下的再存档。完全本地、不联网、轻量到几乎感觉不到它的存在。" />
   <link rel="icon" href="assets/logo.png" />
+  <script>
+    (() => {
+      try {
+        const theme = localStorage.getItem("tempPad-theme");
+        if (theme === "light" || theme === "dark") {
+          document.documentElement.dataset.theme = theme;
+          document.documentElement.style.colorScheme = theme;
+        }
+      } catch (error) {}
+    })();
+  </script>
   <style>
     :root {
       --ink: #1c1c1e;
       --ink-secondary: #6e6e73;
       --ink-tertiary: #a8a8ad;
       --surface: #ffffff;
-      --bg-soft: #f7f7f8;
+      --page-bg: #eef2f6;
+      --bg-soft: #f3f5f8;
+      --edge-left: rgba(76, 110, 245, 0.1);
+      --edge-right: rgba(20, 184, 166, 0.07);
       --hairline: rgba(0, 0, 0, 0.08);
       --accent: #4c6ef5;
       --accent-soft: rgba(76, 110, 245, 0.08);
+      color-scheme: light;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -24,11 +39,45 @@
         --ink-secondary: #a0a0a6;
         --ink-tertiary: #6f6f75;
         --surface: #1a1a1c;
-        --bg-soft: #212124;
+        --page-bg: #101114;
+        --bg-soft: #181c20;
+        --edge-left: rgba(124, 150, 255, 0.14);
+        --edge-right: rgba(45, 212, 191, 0.09);
         --hairline: rgba(255, 255, 255, 0.1);
         --accent: #7c96ff;
         --accent-soft: rgba(124, 150, 255, 0.1);
+        color-scheme: dark;
       }
+    }
+
+    :root[data-theme="light"] {
+      --ink: #1c1c1e;
+      --ink-secondary: #6e6e73;
+      --ink-tertiary: #a8a8ad;
+      --surface: #ffffff;
+      --page-bg: #eef2f6;
+      --bg-soft: #f3f5f8;
+      --edge-left: rgba(76, 110, 245, 0.1);
+      --edge-right: rgba(20, 184, 166, 0.07);
+      --hairline: rgba(0, 0, 0, 0.08);
+      --accent: #4c6ef5;
+      --accent-soft: rgba(76, 110, 245, 0.08);
+      color-scheme: light;
+    }
+
+    :root[data-theme="dark"] {
+      --ink: #e8e8ea;
+      --ink-secondary: #a0a0a6;
+      --ink-tertiary: #6f6f75;
+      --surface: #1a1a1c;
+      --page-bg: #101114;
+      --bg-soft: #181c20;
+      --edge-left: rgba(124, 150, 255, 0.14);
+      --edge-right: rgba(45, 212, 191, 0.09);
+      --hairline: rgba(255, 255, 255, 0.1);
+      --accent: #7c96ff;
+      --accent-soft: rgba(124, 150, 255, 0.1);
+      color-scheme: dark;
     }
 
     * { box-sizing: border-box; margin: 0; }
@@ -36,7 +85,9 @@
     html { scroll-behavior: smooth; }
 
     body {
-      background: var(--surface);
+      background:
+        linear-gradient(90deg, var(--edge-left) 0%, transparent 24%, transparent 76%, var(--edge-right) 100%),
+        var(--page-bg);
       color: var(--ink);
       font-family: "Segoe UI", system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
       line-height: 1.6;
@@ -46,6 +97,47 @@
     }
 
     a { color: inherit; }
+
+    .theme-toggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 20;
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      border: 1px solid var(--hairline);
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.72);
+      color: var(--ink);
+      box-shadow: 0 12px 34px rgba(17, 24, 39, 0.12);
+      cursor: pointer;
+      backdrop-filter: blur(14px);
+      transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+    }
+
+    .theme-toggle:hover { transform: translateY(-1px); }
+    .theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .theme-toggle svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .theme-toggle .icon-sun { display: none; }
+
+    @media (prefers-color-scheme: dark) {
+      .theme-toggle { background: rgba(26, 26, 28, 0.72); }
+      .theme-toggle .icon-moon { display: none; }
+      .theme-toggle .icon-sun { display: block; }
+    }
+
+    :root[data-theme="light"] .theme-toggle { background: rgba(255, 255, 255, 0.72); }
+    :root[data-theme="light"] .theme-toggle .icon-moon { display: block; }
+    :root[data-theme="light"] .theme-toggle .icon-sun { display: none; }
+    :root[data-theme="dark"] .theme-toggle { background: rgba(26, 26, 28, 0.72); }
+    :root[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
+    :root[data-theme="dark"] .theme-toggle .icon-sun { display: block; }
+
+    @media (max-width: 640px) {
+      .theme-toggle { top: 14px; right: 14px; width: 40px; height: 40px; }
+    }
 
     .wrap {
       max-width: 960px;
@@ -59,18 +151,16 @@
       text-align: center;
     }
 
-    .hero .logo {
-      width: min(340px, 70vw);
-      height: auto;
+    .hero .brand {
+      display: inline-block;
       margin-bottom: 8px;
+      line-height: 0;
     }
 
-    @media (prefers-color-scheme: dark) {
-      .hero .logo {
-        border-radius: 20px;
-        background: #f4f4f6;
-        padding: 8px 20px;
-      }
+    .hero .logo {
+      display: block;
+      width: min(340px, 70vw);
+      height: auto;
     }
 
     .hero h1 {
@@ -312,10 +402,17 @@
   </style>
 </head>
 <body>
+  <button class="theme-toggle" id="theme-toggle" type="button" aria-label="&#20999;&#25442;&#21040;&#28145;&#33394;&#27169;&#24335;" title="&#20999;&#25442;&#21040;&#28145;&#33394;&#27169;&#24335;">
+    <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14A8.5 8.5 0 1 1 10 3.5a7 7 0 0 0 10.5 10.5z"/></svg>
+    <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+  </button>
 
   <header class="hero">
     <div class="wrap">
-      <img class="logo" src="assets/logo.png" alt="tempPad logo" />
+      <picture class="brand">
+        <source id="logo-theme-source" srcset="assets/logo-dark.png" media="(prefers-color-scheme: dark)" />
+        <img class="logo" src="assets/logo-light.png" data-light-src="assets/logo-light.png" data-dark-src="assets/logo-dark.png" alt="tempPad logo" />
+      </picture>
       <h1 id="headline">
         <span class="word">打开就写，</span><span class="word">需要留下的</span><span class="word">再存档。</span>
       </h1>
@@ -419,6 +516,54 @@
   <script src="assets/gsap.min.js"></script>
   <script src="assets/ScrollTrigger.min.js"></script>
   <script>
+    const THEME_KEY = "tempPad-theme";
+    const themeMedia = window.matchMedia("(prefers-color-scheme: dark)");
+    const themeToggle = document.getElementById("theme-toggle");
+    const logo = document.querySelector(".hero .logo");
+    const logoSource = document.getElementById("logo-theme-source");
+
+    function getStoredTheme() {
+      try {
+        const theme = localStorage.getItem(THEME_KEY);
+        return theme === "light" || theme === "dark" ? theme : null;
+      } catch (error) {
+        return null;
+      }
+    }
+
+    function getActiveTheme() {
+      return getStoredTheme() || (themeMedia.matches ? "dark" : "light");
+    }
+
+    function syncTheme() {
+      const storedTheme = getStoredTheme();
+      const activeTheme = getActiveTheme();
+
+      if (storedTheme) {
+        document.documentElement.dataset.theme = storedTheme;
+      } else {
+        document.documentElement.removeAttribute("data-theme");
+      }
+
+      document.documentElement.style.colorScheme = activeTheme;
+      logoSource.media = storedTheme ? (activeTheme === "dark" ? "all" : "not all") : "(prefers-color-scheme: dark)";
+      logo.src = activeTheme === "dark" ? logo.dataset.darkSrc : logo.dataset.lightSrc;
+      themeToggle.setAttribute("aria-label", activeTheme === "dark" ? "\u5207\u6362\u5230\u6d45\u8272\u6a21\u5f0f" : "\u5207\u6362\u5230\u6df1\u8272\u6a21\u5f0f");
+      themeToggle.title = themeToggle.getAttribute("aria-label");
+    }
+
+    themeToggle.addEventListener("click", () => {
+      const nextTheme = getActiveTheme() === "dark" ? "light" : "dark";
+      try { localStorage.setItem(THEME_KEY, nextTheme); } catch (error) {}
+      syncTheme();
+    });
+
+    themeMedia.addEventListener("change", () => {
+      if (!getStoredTheme()) syncTheme();
+    });
+
+    syncTheme();
+
     gsap.registerPlugin(ScrollTrigger);
 
     const NOTE_TEXT = "买两盒牛奶，顺路取快递\n下午 3 点和老周对一下方案\n刚冒出来的想法：给存档加个搜索……\n—— 写完就忘，反正它都记着。";
